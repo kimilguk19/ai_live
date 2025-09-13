@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
-// TODO: 실제 API 키로 교체하고, 보안을 위해 안전한 방식으로 관리하세요.
-// 웹 환경에서는 API 키를 클라이언트에 직접 노출하지 않는 것이 중요합니다.
-// 서버를 통해 API를 호출하는 것을 고려하세요.
+// TODO: 여기에 실제 API 키를 입력하세요. (보안상 주의!)
 const String apiKey = 'YOUR_API_KEY';
 
 void main() {
@@ -16,37 +14,39 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gemini Chat Demo',
+      title: 'Flutter Gemini Chat',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        useMaterial3: true, // Material 3 사용 권장
       ),
-      home: const ChatScreen(),
+      home: const ChatScreen(
+        title: 'Flutter Gemini Chat',
+      ),
     );
   }
 }
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  const ChatScreen({super.key, required this.title});
+
+  final String title;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  final TextEditingController _textController = TextEditingController();
+  final List<ChatMessage> _messages = [];
   late final GenerativeModel _model;
   late final ChatSession _chat;
-  final TextEditingController _textController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
-
-  final List<Message> _messages = [];
 
   @override
   void initState() {
     super.initState();
     _model = GenerativeModel(
-      model: 'gemini-1.5-flash', // 또는 'gemini-pro' 등 다른 모델
+      model: 'gemini-2.5-flash', // 사용할 모델
       apiKey: apiKey,
     );
     _chat = _model.startChat();
@@ -56,18 +56,19 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gemini Chat'),
+        title: Text(widget.title),
       ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
-              controller: _scrollController,
+              padding: const EdgeInsets.all(8.0),
+              reverse: true, // 새 메시지가 아래에 표시되도록
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                return MessageBubble(
-                  text: message.text,
+                return ChatBubble(
+                  message: message.text,
                   isUser: message.isUser,
                 );
               },
@@ -85,11 +86,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: TextField(
                     controller: _textController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: '메시지를 입력하세요...',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25.0),
+                      ),
                     ),
-                    onSubmitted: _sendMessage,
+                    onSubmitted: _isLoading ? null : _sendMessage,
                   ),
                 ),
                 const SizedBox(width: 8.0),
@@ -110,12 +113,10 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
 
     setState(() {
-      _messages.add(Message(text: text, isUser: true));
+      _messages.insert(0, ChatMessage(text: text, isUser: true));
       _isLoading = true;
     });
-
     _textController.clear();
-    _scrollToBottom();
 
     try {
       final response = await _chat.sendMessage(
@@ -123,55 +124,60 @@ class _ChatScreenState extends State<ChatScreen> {
       );
       final responseText = response.text;
 
-      if (responseText != null) {
-        setState(() {
-          _messages.add(Message(text: responseText, isUser: false));
-        });
+      if (responseText == null) {
+        _showError('모델에서 응답을 받지 못했습니다.');
+        return;
       }
-    } catch (e) {
-      // 오류 처리
-      print('Error sending message: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('메시지 전송 오류: $e')),
-      );
+
       setState(() {
-        _messages.add(Message(text: "오류가 발생했습니다.", isUser: false));
+        _messages.insert(0, ChatMessage(text: responseText, isUser: false));
       });
+    } catch (e) {
+      _showError(e.toString());
     } finally {
       setState(() {
         _isLoading = false;
       });
-      _scrollToBottom();
     }
   }
 
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      }
-    });
+  void _showError(String message) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('오류'),
+          content: SingleChildScrollView(
+            child: Text(message),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('확인'),
+            )
+          ],
+        );
+      },
+    );
   }
 }
 
-// 간단한 메시지 데이터 클래스
-class Message {
+// 간단한 채팅 메시지 데이터 클래스
+class ChatMessage {
   final String text;
   final bool isUser;
 
-  Message({required this.text, required this.isUser});
+  ChatMessage({required this.text, required this.isUser});
 }
 
-// 메시지 버블 위젯
-class MessageBubble extends StatelessWidget {
-  final String text;
+// 간단한 채팅 말풍선 위젯
+class ChatBubble extends StatelessWidget {
+  final String message;
   final bool isUser;
 
-  const MessageBubble({
-    super.key,
-    required this.text,
-    required this.isUser,
-  });
+  const ChatBubble({super.key, required this.message, required this.isUser});
 
   @override
   Widget build(BuildContext context) {
@@ -184,7 +190,7 @@ class MessageBubble extends StatelessWidget {
           color: isUser ? Colors.blue[100] : Colors.grey[300],
           borderRadius: BorderRadius.circular(12.0),
         ),
-        child: Text(text),
+        child: Text(message),
       ),
     );
   }
