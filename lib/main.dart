@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // 외부 파일에 API 키 관리
+import 'package:flutter_markdown/flutter_markdown.dart'; // 마크다운 렌더링(화면출력)
 
 // TODO: 여기에 실제 API 키를 입력하세요. (보안상 주의!)
-const String apiKey = 'YOUR_API_KEY';
+// const String apiKey = 'YOUR_API_KEY';
 
-void main() {
+void main() async {
+  // .env 파일에서 환경(environment) 변수를 로드합니다
+  await dotenv.load(fileName: 'assets/.env');
   runApp(const MyApp());
 }
 
@@ -37,7 +41,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
-  final List<ChatMessage> _messages = [];
+  final List<ChatMessage> _messages = []; // 사용자 및 모델 메시지를 저장할 목록
   late final GenerativeModel _model;
   late final ChatSession _chat;
   bool _isLoading = false;
@@ -45,6 +49,13 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    var apiKey = dotenv.env['GEMINI_API_KEY']; // var형은 null값도 가능하다.
+    if(apiKey == null) {
+      // API 키가 없는 경우 처리 (예: 오류 메시지 표시)
+      print('API 키를 찾을 수 없습니다.');
+      // 앱을 계속 진행하지 못하도록 예외를 던지거나 사용자에게 알릴 수 있습니다.
+      throw Exception('GEMINI_API_KEY 환경 변수가 설정되지 않았습니다.');
+    }
     _model = GenerativeModel(
       model: 'gemini-2.5-flash', // 사용할 모델
       apiKey: apiKey,
@@ -100,6 +111,12 @@ class _ChatScreenState extends State<ChatScreen> {
                   icon: const Icon(Icons.send),
                   onPressed: _isLoading ? null : () =>
                       _sendMessage(_textController.text),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    shape: const CircleBorder(),
+                    padding: const EdgeInsets.all(12.0),
+                  ),
                 ),
               ],
             ),
@@ -190,7 +207,13 @@ class ChatBubble extends StatelessWidget {
           color: isUser ? Colors.blue[100] : Colors.grey[300],
           borderRadius: BorderRadius.circular(12.0),
         ),
-        child: Text(message),
+        //child: Text(message), // 기존 텍스트 위젯을 주석 처리하고 아래코드 사용
+        // Markdown 위젯을 사용하여 텍스트를 렌더링합니다.
+        // 이렇게 하면 Gemini가 반환하는 마크다운 형식을 올바르게 표시할 수 있습니다.
+        child: MarkdownBody(
+          data: message,
+          selectable: true, // 텍스트를 선택할 수 있도록 설정
+        ),
       ),
     );
   }
