@@ -1,4 +1,4 @@
-*.env
+env.js
 # Miscellaneous
 *.class
 *.log

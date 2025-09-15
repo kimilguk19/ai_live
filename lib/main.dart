@@ -7,8 +7,8 @@ import 'package:flutter_markdown/flutter_markdown.dart'; // 마크다운 렌더�
 // const String apiKey = 'YOUR_API_KEY';
 
 void main() async {
-  // .env 파일에서 환경(environment) 변수를 로드합니다
-  await dotenv.load(fileName: 'assets/.env');
+  // env.js 파일에서 환경(environment) 변수를 로드합니다
+  await dotenv.load(fileName: 'assets/env.js');
   runApp(const MyApp());
 }
 
