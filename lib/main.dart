@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // 외부 파일에 API 키 관리
 import 'package:flutter_markdown/flutter_markdown.dart'; // 마크다운 렌더링(화면출력)
+import 'package:shared_preferences/shared_preferences.dart'; // 추가
+import 'dart:convert'; // JSON 인코딩/디코딩을 위해 추가
 
 // TODO: 여기에 실제 API 키를 입력하세요. (보안상 주의!)
 // const String apiKey = 'YOUR_API_KEY';
@@ -18,6 +20,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Gemini Chat',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -41,10 +44,13 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
-  final List<ChatMessage> _messages = []; // 사용자 및 모델 메시지를 저장할 목록
+  List<ChatMessage> _messages = []; // 사용자 및 모델 메시지를 저장할 목록
   late final GenerativeModel _model;
   late final ChatSession _chat;
   bool _isLoading = false;
+
+  // SharedPreferences 키
+  static const String _messagesKey = 'chat_messages';
 
   @override
   void initState() {
@@ -61,6 +67,39 @@ class _ChatScreenState extends State<ChatScreen> {
       apiKey: apiKey,
     );
     _chat = _model.startChat();
+    _loadMessages(); // 메시지 불러오기 함수 호출
+  }
+
+  // 메시지 불러오기
+  Future<void> _loadMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? messagesJson = prefs.getString(_messagesKey);
+    if (messagesJson != null) {
+      try {
+        final List<dynamic> decodedMessages = jsonDecode(messagesJson);
+        setState(() {
+          _messages = decodedMessages
+              .map((json) => ChatMessage.fromJson(json))
+              .toList()
+              .reversed // 최신 메시지가 아래로 가도록 불러온 후 다시 뒤집음
+              .toList();
+        });
+      } catch (e) {
+        print('Error loading messages: $e');
+        // 오류 처리 (예: 저장된 데이터가 손상된 경우)
+      }
+    }
+  }
+
+  // 메시지 저장하기
+  Future<void> _saveMessages() async {
+    final prefs = await SharedPreferences.getInstance();
+    // UI에서는 최신 메시지가 아래에 있으므로, 저장 시에는 순서를 유지하거나
+    // 불러올 때 reversed를 고려해야 합니다. 여기서는 UI 순서대로 저장합니다.
+    final List<Map<String, dynamic>> messagesToSave =
+    _messages.reversed.map((msg) => msg.toJson()).toList();
+    final String messagesJson = jsonEncode(messagesToSave);
+    await prefs.setString(_messagesKey, messagesJson);
   }
 
   @override
@@ -68,6 +107,12 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [ // 메시지 삭제 버튼 (선택 사항)
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: _clearMessages,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -134,6 +179,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _isLoading = true;
     });
     _textController.clear();
+    await _saveMessages(); // 사용자 메시지 전송 후 즉시 저장
 
     try {
       final response = await _chat.sendMessage(
@@ -149,6 +195,7 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _messages.insert(0, ChatMessage(text: responseText, isUser: false));
       });
+      await _saveMessages(); // 모델 응답 수신 후 저장
     } catch (e) {
       _showError(e.toString());
     } finally {
@@ -179,6 +226,41 @@ class _ChatScreenState extends State<ChatScreen> {
       },
     );
   }
+// 메시지 전체 삭제 함수
+  Future<void> _clearMessages() async {
+    // 삭제 대화상자 표시
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('모든 메시지 삭제'),
+          content: const Text('모든 메시지를 삭제하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // 취소
+              },
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // 삭제
+              },
+              child: const Text('삭제'),
+            ),
+          ],
+        );
+      },
+    );
+    if(confirm==true) {
+      // SharedPreferences에서 모든 메시지 삭제
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_messagesKey);
+      setState(() {
+        _messages.clear(); // 화면 상태에서 모든 메시지 삭제
+      });
+    }
+  }
 }
 
 // 간단한 채팅 메시지 데이터 클래스
@@ -187,6 +269,17 @@ class ChatMessage {
   final bool isUser;
 
   ChatMessage({required this.text, required this.isUser});
+  // ChatMessage 객체를 JSON 맵으로 변환
+  Map<String, dynamic> toJson() => {
+    'text': text,
+    'isUser': isUser,
+  };
+
+  // JSON 맵에서 ChatMessage 객체로 변환
+  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
+    text: json['text'] as String,
+    isUser: json['isUser'] as bool,
+  );
 }
 
 // 간단한 채팅 말풍선 위젯

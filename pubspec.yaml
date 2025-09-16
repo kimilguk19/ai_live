@@ -33,6 +33,7 @@ dependencies:
   google_generative_ai: ^0.4.6
   flutter_dotenv: ^6.0.0 # 외부 파일에 API 키 관리
   flutter_markdown: ^0.7.0 # 마크다운 렌더링(화면출력)
+  shared_preferences: ^2.0.15 # 로컬 스토리지에 저장
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
