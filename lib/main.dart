@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart'; // 외부 파일에 API 키 관리
 import 'package:flutter_markdown/flutter_markdown.dart'; // 마크다운 렌더링(화면출력)
-import 'package:shared_preferences/shared_preferences.dart'; // 추가
-import 'dart:convert'; // JSON 인코딩/디코딩을 위해 추가
+//import 'package:shared_preferences/shared_preferences.dart'; // 추가
+//import 'dart:convert'; // JSON 인코딩/디코딩을 위해 추가
+import 'chat_database.dart'; // DB-헬퍼클래스 추가
 
 // TODO: 여기에 실제 API 키를 입력하세요. (보안상 주의!)
 // const String apiKey = 'YOUR_API_KEY';
@@ -50,7 +51,9 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = false;
 
   // SharedPreferences 키
-  static const String _messagesKey = 'chat_messages';
+  //static const String _messagesKey = 'chat_messages';
+  // ChatDatabase 인스턴스 Sembast사용
+  final ChatDatabase _chatDb = ChatDatabase();
 
   @override
   void initState() {
@@ -71,6 +74,13 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   // 메시지 불러오기
+  Future<void> _loadMessages() async { // Sembast사용
+    final messages = await _chatDb.getAllMessages();
+    setState(() {
+      _messages = messages.reversed.toList();
+    });
+  }
+  /* 기존 저장 _saveMessages() 과 _loadMessages() 를 주석처리한다.
   Future<void> _loadMessages() async {
     final prefs = await SharedPreferences.getInstance();
     final String? messagesJson = prefs.getString(_messagesKey);
@@ -101,7 +111,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final String messagesJson = jsonEncode(messagesToSave);
     await prefs.setString(_messagesKey, messagesJson);
   }
-
+*/
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -179,8 +189,8 @@ class _ChatScreenState extends State<ChatScreen> {
       _isLoading = true;
     });
     _textController.clear();
-    await _saveMessages(); // 사용자 메시지 전송 후 즉시 저장
-
+    //await _saveMessages(); // 사용자 메시지 전송 후 즉시 저장
+    await _chatDb.insertMessage(ChatMessage(text: text, isUser: true));
     try {
       final response = await _chat.sendMessage(
         Content.text(text),
@@ -195,7 +205,8 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _messages.insert(0, ChatMessage(text: responseText, isUser: false));
       });
-      await _saveMessages(); // 모델 응답 수신 후 저장
+      //await _saveMessages(); // 모델 응답 수신 후 저장
+      await _chatDb.insertMessage(ChatMessage(text: responseText, isUser: false));
     } catch (e) {
       _showError(e.toString());
     } finally {
@@ -254,8 +265,9 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     if(confirm==true) {
       // SharedPreferences에서 모든 메시지 삭제
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_messagesKey);
+      //final prefs = await SharedPreferences.getInstance();
+      //await prefs.remove(_messagesKey);
+      await _chatDb.deleteAllMessages(); // Sembast사용
       setState(() {
         _messages.clear(); // 화면 상태에서 모든 메시지 삭제
       });
