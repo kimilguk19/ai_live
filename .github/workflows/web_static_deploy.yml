@@ -18,8 +18,7 @@ jobs:
       # CREATE THE .ENV FILE USING SECRETS
       - name: Create .env file
         run: |
-          mkdir assets
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > assets/.env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
 
       # 2
       # https://github.com/marketplace/actions/flutter-action
