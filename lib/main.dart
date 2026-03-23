@@ -49,7 +49,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    var apiKey = dotenv.env['GEMINI_API_KEY']; // var형은 null값도 가능하다.
+    //var apiKey = dotenv.env['GEMINI_API_KEY']; // var형은 null값도 가능하다.
     if(apiKey == null) {
       // API 키가 없는 경우 처리 (예: 오류 메시지 표시)
       print('API 키를 찾을 수 없습니다.');
