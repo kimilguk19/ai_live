@@ -14,7 +14,7 @@ jobs:
       # https://github.com/marketplace/actions/checkout
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Create environment file
+
       # CREATE THE .ENV FILE USING SECRETS
       - name: Create .env file
         run: |
@@ -26,8 +26,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: master
-      - name: Install dependencies
-        run: flutter pub get
+
       # 3
       - name: Build web
         run: flutter build web --base-href "/${{ github.event.repository.name }}/"
