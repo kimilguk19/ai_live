@@ -8066,7 +8066,7 @@ ahp:function ahp(){},
 atl(){var s=0,r=A.Q(t.H),q,p,o,n,m,l,k
 var $async$atl=A.M(function(a,b){if(a===1)return A.N(b,r)
 for(;;)switch(s){case 0:s=2
-return A.S($.aHB().v1("assets/.env"),$async$atl)
+return A.S($.aHB().v1("assets/env.js"),$async$atl)
 case 2:if($.a0==null)A.avV()
 q=$.a0
 q.toString
