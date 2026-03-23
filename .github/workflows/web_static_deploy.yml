@@ -4,7 +4,7 @@ name: deploy flutter web to github pages
 on:
   push:
     branches:
-      - app11_02
+      - app11_03
 
 jobs:
   deploy:
