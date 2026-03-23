@@ -16,10 +16,10 @@ jobs:
         uses: actions/checkout@v4
 
       # CREATE THE .ENV FILE USING SECRETS
-      - name: Create .env file
+      - name: Create env file
         run: |
           mkdir assets
-          echo "GEMINI_API_KEY=null" > assets/.env
+          echo "GEMINI_API_KEY=null" > assets/env.js
 
       # 2
       # https://github.com/marketplace/actions/flutter-action
