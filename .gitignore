@@ -1,4 +1,6 @@
 env.js
+*.env
+.github/
 # Miscellaneous
 *.class
 *.log
