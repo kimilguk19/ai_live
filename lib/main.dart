@@ -4,7 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart'; // 외부 파일에 API 키
 import 'package:flutter_markdown/flutter_markdown.dart'; // 마크다운 렌더링(화면출력)
 
 // TODO: 여기에 실제 API 키를 입력하세요. (보안상 주의!)
-const String apiKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: "check19");//'YOUR_API_KEY';
+// const String apiKey = 'YOUR_API_KEY';
 
 void main() async {
   // .env 파일에서 환경(environment) 변수를 로드합니다
@@ -49,7 +49,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    //var apiKey = dotenv.env['GEMINI_API_KEY']; // var형은 null값도 가능하다.
+    var apiKey = dotenv.env['GEMINI_API_KEY']; // var형은 null값도 가능하다.
     if(apiKey == null) {
       // API 키가 없는 경우 처리 (예: 오류 메시지 표시)
       print('API 키를 찾을 수 없습니다.');
