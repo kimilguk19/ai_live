@@ -1,5 +1,5 @@
 env.js
-.env
+*.env
 # Miscellaneous
 *.class
 *.log
