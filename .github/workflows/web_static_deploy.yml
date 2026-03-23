@@ -21,8 +21,6 @@ jobs:
           mkdir assets
           echo "GEMINI_API_KEY=null" > assets/.env
 
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       # 2
       # https://github.com/marketplace/actions/flutter-action
       - name: Setup flutter
@@ -32,6 +30,7 @@ jobs:
 
       # 3
       - name: Build web
+        #run: flutter build web --base-href "/${{ github.event.repository.name }}/"
         run: flutter build web --release --base-href "/${{ github.event.repository.name }}/" --dart-define=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
 
       # 4
