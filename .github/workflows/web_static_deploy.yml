@@ -13,12 +13,12 @@ jobs:
       # 1
       # https://github.com/marketplace/actions/checkout
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v1
 
       # 2
       # https://github.com/marketplace/actions/flutter-action
       - name: Setup flutter
-        uses: subosito/flutter-action@v2
+        uses: actions/flutter-action@v1
         with:
           channel: stable
           flutter-version: 3.8.1
@@ -30,7 +30,7 @@ jobs:
       # 4
       # https://github.com/marketplace/actions/github-pages-action
       - name: Deploy to github pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: actions/deploy-pages@v1
         with:
           github_token: ${{ secrets.STATIC_DEPLOY_KEY }}
           publish_dir: ./build/web
