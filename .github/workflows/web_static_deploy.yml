@@ -15,9 +15,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Create environment file
-        uses: SpicyPizza/create-envfile@v2.0
-        with:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      # CREATE THE .ENV FILE USING SECRETS
+      - name: Create .env file
+        run: |
+          mkdir assets
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > assets/.env
+
       # 2
       # https://github.com/marketplace/actions/flutter-action
       - name: Setup flutter
